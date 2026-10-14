@@ -1,0 +1,8 @@
+name: iacon
+
+services: {}
+
+networks:
+  default:
+    name: workshop-net
+    external: true
