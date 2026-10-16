@@ -1,0 +1,48 @@
+app_project: workshop-v4
+agent_project: workshop-agent
+iacon_project: iacon
+app_compose_file: docker-compose-app.yml
+agent_compose_file: docker-compose-agent.yml
+steady_seconds: 20
+inject_jitter_seconds: 5
+observe_timeout_seconds: 180
+settle_seconds: 20
+scenarios:
+  - id: S1
+    kind: dev
+    true_cause: redis_unavailable
+  - id: S2
+    kind: dev
+    true_cause: pgbouncer_down
+  - id: S3
+    kind: dev
+    true_cause: postgres_down
+  - id: S4
+    kind: dev
+    true_cause: database_disk_full
+  - id: S5
+    kind: dev
+    true_cause: pool_saturated
+  - id: S6
+    kind: dev
+    true_cause: app_down
+  - id: S7
+    kind: dev
+    true_cause: app_internal_errors
+  - id: H1
+    kind: holdout
+    true_cause: redis_unavailable
+    acceptable: [redis_unavailable, unknown]
+  - id: H2
+    kind: holdout
+    true_cause: postgres_down
+    acceptable: [postgres_down, unknown]
+  - id: H3
+    kind: holdout
+    true_cause: monitoring_degraded
+    acceptable: [monitoring_degraded, unknown]
+    expect_no_app_incident: true
+  - id: H4
+    kind: holdout
+    soak_minutes: 120
+    expect_no_incident: true
