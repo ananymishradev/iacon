@@ -1,6 +1,17 @@
 name: iacon
 
-services: {}
+services:
+  loadgen:
+    build:
+      context: .
+      dockerfile: testbed/loadgen/Dockerfile
+    environment:
+      APP_URL: http://app:8080
+      RPS: "6"
+      MODE: normal
+    networks:
+      - default
+    restart: unless-stopped
 
 networks:
   default:
