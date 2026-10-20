@@ -1,4 +1,5 @@
 .env
 /data/
 eval/runs/
+eval/ground_truth.jsonl
 testbed/harness/config.local.yaml
