@@ -6,10 +6,14 @@ import (
 	"testing"
 )
 
-type recordingRunner struct{ args []string }
+type recordingRunner struct {
+	args  []string
+	calls [][]string
+}
 
 func (r *recordingRunner) Exec(_ context.Context, args ...string) (string, error) {
 	r.args = append([]string(nil), args...)
+	r.calls = append(r.calls, append([]string(nil), args...))
 	return "", nil
 }
 

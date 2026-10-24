@@ -16,6 +16,12 @@ type ComposeCmd struct {
 	Workdir string
 }
 
+func (c ComposeCmd) WithFiles(files ...string) ComposeCmd {
+	next := c
+	next.Files = append([]string(nil), files...)
+	return next
+}
+
 type ExecRunner struct{}
 
 func (ExecRunner) Exec(ctx context.Context, args ...string) (string, error) {

@@ -1,0 +1,4 @@
+services:
+  postgres:
+    tmpfs:
+      - ${PGDATA_PATH:?PGDATA_PATH is required}:size=${S4_TMPFS_SIZE:?S4_TMPFS_SIZE is required},mode=0700
