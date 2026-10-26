@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 )
 
 func Scenarios(app ComposeCmd) map[string]Scenario {
@@ -31,10 +32,57 @@ func Scenarios(app ComposeCmd) map[string]Scenario {
 		"S2": makeScenario("S2", "dev", "pgbouncer_down", "stop", "pgbouncer"),
 		"S3": makeScenario("S3", "dev", "postgres_down", "stop", "postgres"),
 		"S4": diskFullScenario(app),
+		"S5": poolSaturationScenario(app),
 		"S6": makeScenario("S6", "dev", "app_down", "stop", "app"),
+		"S7": appErrorsScenario(),
 		"H1": makeScenario("H1", "holdout", "redis_unavailable", "pause", "redis"),
 		"H2": makeScenario("H2", "holdout", "postgres_down", "pause", "postgres"),
 		"H3": makeScenario("H3", "holdout", "monitoring_degraded", "stop", "prometheus"),
+	}
+}
+
+func poolSaturationScenario(app ComposeCmd) Scenario {
+	sessionCount := 5
+	if value, err := strconv.Atoi(os.Getenv("PG_POOL_SIZE")); err == nil && value > 0 {
+		sessionCount = value
+	}
+	return Scenario{
+		ID: "S5", Kind: "dev", TrueCause: "pool_saturated",
+		Inject: func(ctx context.Context, runner Runner) error {
+			for i := 0; i < sessionCount; i++ {
+				if _, err := app.ExecDetached(ctx, runner, "postgres", "psql",
+					"--host=pgbouncer", "--username=workshop", "--dbname=workshop",
+					"--command=SELECT pg_sleep(3599)"); err != nil {
+					return fmt.Errorf("start saturation session %d: %w", i+1, err)
+				}
+			}
+			return nil
+		},
+		Restore: func(ctx context.Context, runner Runner) error {
+			_, err := app.Exec(ctx, runner, "postgres", "psql",
+				"--host=postgres", "--username=workshop", "--dbname=workshop",
+				"--command=SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE query LIKE '%pg_sleep(3599)%'")
+			return err
+		},
+	}
+}
+
+func appErrorsScenario() Scenario {
+	var containerID string
+	return Scenario{
+		ID: "S7", Kind: "dev", TrueCause: "app_internal_errors",
+		Inject: func(ctx context.Context, runner Runner) error {
+			id, err := startEphemeralLoadgen(ctx, runner, "app-errors")
+			if err == nil {
+				containerID = id
+			}
+			return err
+		},
+		Restore: func(ctx context.Context, runner Runner) error {
+			err := stopEphemeral(ctx, runner, containerID)
+			containerID = ""
+			return err
+		},
 	}
 }
 
