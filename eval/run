@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+: "${TAG:?TAG is required}"
+OBSERVER="${OBSERVER:-v0}"
+REPEAT="${REPEAT:-10}"
+
+go run ./testbed/harness run --tag "$TAG" --observer "$OBSERVER" --repeat "$REPEAT"
+go run ./testbed/harness report --tag "$TAG"

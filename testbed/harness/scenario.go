@@ -26,6 +26,7 @@ type RunConfig struct {
 	Agent          string
 	RunIndex       int
 	Seed           int64
+	HoldoutHash    string
 	Steady         time.Duration
 	InjectJitter   time.Duration
 	ObserveTimeout time.Duration
@@ -39,6 +40,7 @@ type RunResult struct {
 	Tag            string    `json:"tag"`
 	RunIndex       int       `json:"run_index"`
 	Seed           int64     `json:"seed"`
+	HoldoutHash    string    `json:"holdout_hash,omitempty"`
 	Status         string    `json:"status"`
 	TInject        time.Time `json:"t_inject"`
 	TRestore       time.Time `json:"t_restore"`
@@ -75,6 +77,7 @@ func RunScenario(ctx context.Context, scenario Scenario, runner Runner, observer
 	result := RunResult{
 		Scenario: scenario.ID, Kind: scenario.Kind, Agent: cfg.Agent, Tag: cfg.Tag,
 		RunIndex: cfg.RunIndex, Seed: cfg.Seed, TrueCause: scenario.TrueCause,
+		HoldoutHash: cfg.HoldoutHash,
 	}
 	before, err := observer.Current(ctx)
 	if err != nil {
