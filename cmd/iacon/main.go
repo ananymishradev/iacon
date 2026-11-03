@@ -12,6 +12,7 @@ import (
 
 	"iacon/internal/config"
 	"iacon/internal/httpx"
+	"iacon/internal/telemetry"
 )
 
 func main() {
@@ -20,7 +21,22 @@ func main() {
 		log.Fatal(err)
 	}
 	health := httpx.NewServer()
+	health.SetMetrics(telemetry.NewMetrics().Handler())
 	server := &http.Server{Addr: cfg.ListenAddr, Handler: health.Handler()}
+	runCtx, stop := context.WithCancel(context.Background())
+	defer stop()
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-runCtx.Done():
+				return
+			case tick := <-ticker.C:
+				health.SetTick(tick.UnixMilli())
+			}
+		}
+	}()
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- server.ListenAndServe()
@@ -35,6 +51,7 @@ func main() {
 		}
 	case <-signals:
 		health.SetStopping()
+		stop()
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := server.Shutdown(ctx); err != nil {

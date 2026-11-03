@@ -1,6 +1,32 @@
 name: iacon
 
 services:
+  iacon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8090:8090"
+    networks:
+      default:
+        aliases:
+          - agent
+    volumes:
+      - iacon-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8090/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    cpus: 0.5
+    restart: unless-stopped
   loadgen:
     build:
       context: .
@@ -17,3 +43,6 @@ networks:
   default:
     name: workshop-net
     external: true
+
+volumes:
+  iacon-data:
