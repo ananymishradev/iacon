@@ -13,7 +13,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 || os.Args[1] == "help" || os.Args[1] == "--help" {
-		fmt.Fprintln(os.Stderr, "usage: harness {run|report|help}")
+		fmt.Fprintln(os.Stderr, "usage: harness {run|report|preflight|reset|help}")
 		return
 	}
 	switch os.Args[1] {
@@ -27,10 +27,34 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+	case "preflight", "reset":
+		if err := lifecycleCommand(os.Args[1], os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "unknown subcommand %q\n", os.Args[1])
 		os.Exit(2)
 	}
+}
+
+func lifecycleCommand(command string, args []string) error {
+	fs := flag.NewFlagSet(command, flag.ContinueOnError)
+	repo := "."
+	fs.StringVar(&repo, "repo", repo, "repository root")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	cfg, err := LoadConfig(repo)
+	if err != nil {
+		return err
+	}
+	app := ComposeCmd{Project: cfg.AppProject, Files: []string{filepath.Join(cfg.WorkshopDir, cfg.AppComposeFile)}}
+	observer := V0Observer{Cmd: ComposeCmd{Project: cfg.AgentProject, Files: []string{filepath.Join(cfg.WorkshopDir, cfg.AgentComposeFile)}}, Runner: ExecRunner{}, Service: "agent"}
+	if command == "preflight" {
+		return Preflight(context.Background(), ExecRunner{}, app, observer, time.Duration(cfg.SettleSeconds)*time.Second)
+	}
+	return Reset(context.Background(), ExecRunner{}, app)
 }
 
 func runCommand(args []string) error {

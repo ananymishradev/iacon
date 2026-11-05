@@ -4,6 +4,10 @@
 
 Record workshop facts and the results of Spikes A-D here.
 
+Automated implementation is complete through the agent, harness, telemetry and
+Compose code paths. The live-stack values and measurements below still require
+the workshop repository and are intentionally not guessed.
+
 ## Verification checklist
 
 - [ ] A `-f` override preserves the workshop Compose project name.
@@ -14,3 +18,5 @@ Record workshop facts and the results of Spikes A-D here.
 ## Surprises
 
 ## Post-hoc changes
+
+No post-hoc evaluation changes have been made.
