@@ -15,6 +15,13 @@ type Server struct {
 	lastPoll *time.Time
 	incident json.RawMessage
 	stopping bool
+	metrics  http.Handler
+}
+
+func (s *Server) SetMetrics(handler http.Handler) {
+	s.mu.Lock()
+	s.metrics = handler
+	s.mu.Unlock()
 }
 
 func NewServer() *Server {
@@ -56,6 +63,16 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/live", s.live)
 	mux.HandleFunc("/ready", s.ready)
 	mux.HandleFunc("/health", s.ready)
+	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		s.mu.RLock()
+		handler := s.metrics
+		s.mu.RUnlock()
+		if handler == nil {
+			http.NotFound(w, r)
+			return
+		}
+		handler.ServeHTTP(w, r)
+	})
 	return mux
 }
 
